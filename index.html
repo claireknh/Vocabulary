@@ -3,85 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TOEIC 衝刺助手</title>
+    <title>TOEIC 聽拼速成版</title>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; }
-        body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; -webkit-tap-highlight-color: transparent; }
+        :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --purple: #6f42c1; }
+        body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; padding-bottom: 100px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; margin-top: 0; }
-        textarea { width: 100%; height: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; }
-        .btns { display: flex; gap: 8px; margin-bottom: 15px; }
+        textarea { width: 100%; height: 80px; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; }
+        .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; touch-action: manipulation; }
-        .btn-main { background: var(--primary); color: white; flex: 2; padding: 15px; font-size: 16px; }
-        .btn-next { background: #fd7e14; color: white; flex: 1.2; display: none; font-size: 14px; }
+        .btn-main { background: var(--primary); color: white; padding: 15px; font-size: 16px; }
+        .btn-audio { background: var(--purple); color: white; padding: 15px; font-size: 16px; }
         
-        .word-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; }
-        .word-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .word-main { font-size: 20px; font-weight: bold; color: #000; }
-        .word-sub { font-size: 14px; color: #666; margin-top: 4px; }
-        .kk-box { display: inline-flex; align-items: center; background: #f8f9fa; padding: 2px 8px; border-radius: 4px; }
-        .spk-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 2px 10px; border-radius: 5px; margin-left: 8px; font-size: 16px; }
+        /* 懸浮停止按鈕 */
+        .stop-float {
+            position: fixed;
+            right: 20px;
+            bottom: 110px;
+            width: 60px;
+            height: 60px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            display: none; /* 播放時才顯示 */
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border: 2px solid white;
+        }
+
+        .word-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; position: relative; transition: background 0.3s; }
+        .word-main { font-size: 22px; font-weight: bold; }
+        .kk-box { display: inline-flex; align-items: center; background: #f8f9fa; padding: 3px 10px; border-radius: 6px; border: 1px solid #e9ecef; margin-top: 5px; }
+        .spk-btn { background: white; border: 1px solid var(--primary); color: var(--primary); padding: 2px 10px; border-radius: 5px; margin-left: 10px; }
         
-        .action-btns { display: flex; gap: 5px; width: 100%; }
-        .action-btns button { flex: 1; padding: 10px; color: white; font-size: 14px; }
-        .b-k { background: var(--success); }
-        .b-n { background: var(--warning); color: #000; }
-        .b-f { background: var(--danger); }
+        .spell-display { color: var(--purple); font-family: monospace; font-weight: bold; font-size: 18px; margin-top: 5px; height: 24px; min-height: 24px; }
         
-        /* 狀態樣式 */
-        .st-know { opacity: 0.3; filter: grayscale(1); }
-        .st-not { border-left: 5px solid var(--warning); padding-left: 10px; }
-        .st-forget { border-left: 5px solid var(--danger); padding-left: 10px; }
+        .action-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .action-btns button { flex: 1; padding: 12px; color: white; font-size: 14px; }
+        .b-k { background: var(--success); } .b-n { background: var(--warning); color: #000; } .b-f { background: var(--danger); }
         
+        .st-know { opacity: 0.2; filter: grayscale(1); }
+        .highlight-playing { border: 3px solid var(--purple) !important; background: #fdfaff !important; border-radius: 10px; z-index: 10; }
         #count { text-align: right; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎯 TOEIC 手機衝刺版</h2>
+    <h2>🎯 TOEIC 聽拼衝刺助手</h2>
     <textarea id="rawInput" placeholder="在此貼上單字資料..."></textarea>
     <div class="btns">
-        <button class="btn-main" onclick="run()">開始複習</button>
-        <button id="nextBtn" class="btn-next" onclick="nextRound()">下一輪 ⮕</button>
+        <button class="btn-main" onclick="run(true)">隨機複習</button>
+        <button id="audioModeBtn" class="btn-audio" onclick="toggleAudioLoop()">🎧 啟動循環聽拼</button>
     </div>
     <div id="count"></div>
     <div id="out"></div>
 </div>
 
+<div id="stopBtn" class="stop-float" onclick="stopAudioLoop()">⏹</div>
+
 <script>
     let list = [];
+    let isAudioLooping = false;
 
-    function run() {
+    const posMap = {
+        "n.": "名詞", "v.": "動詞", "adj.": "形容詞", "adv.": "副詞",
+        "prep.": "介系詞", "conj.": "連接詞", "pron.": "代名詞", "int.": "感嘆詞"
+    };
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function run(shouldShuffle = true) {
+        stopAudioLoop();
         const txt = document.getElementById('rawInput').value;
-        const lines = txt.split('\n');
+        let lines = txt.split('\n').filter(l => l.trim() !== '');
+        if (shouldShuffle) lines = shuffle(lines);
         const out = document.getElementById('out');
         out.innerHTML = '';
         list = [];
 
         lines.forEach((l, i) => {
-            if (!l.trim()) return;
             try {
                 let p = l.trim().split(/\s+/);
-                let w = p[0].toLowerCase();
+                let w = (p[0] || '').toLowerCase();
                 let pos = p[1] || '';
                 let kk = p[2] || '';
                 let tr = p.slice(3).join(' ') || '';
-
                 list.push({ id: i, w, pos, kk, tr, s: 'none' });
 
                 let card = document.createElement('div');
                 card.id = 'c' + i;
                 card.className = 'word-card';
                 card.innerHTML = `
-                    <div class="word-row">
+                    <div style="display:flex; justify-content:space-between;">
                         <div>
-                            <div class="word-main">${w} <small style="font-size:12px; font-weight:normal; color:#888;">${pos}</small></div>
-                            <div class="word-sub">
-                                <span class="kk-box">${kk} <button class="spk-btn" onclick="say('${w}')">🔊</button></span>
-                            </div>
+                            <div class="word-main">${w}</div>
+                            <div class="kk-box">${kk} <button class="spk-btn" onclick="say('${w}')">📢</button></div>
+                            <div id="spell-${i}" class="spell-display"></div>
                         </div>
-                        <div style="text-align:right; font-size:16px; font-weight:bold; color:#333;">${tr}</div>
+                        <div style="text-align:right;">
+                            <div style="font-size:12px; color:#888;">${pos}</div>
+                            <div style="font-size:18px; font-weight:bold;">${tr}</div>
+                        </div>
                     </div>
                     <div class="action-btns">
                         <button class="b-k" onclick="upd(${i},'know')">熟悉</button>
@@ -90,14 +122,86 @@
                     </div>
                 `;
                 out.appendChild(card);
-            } catch (e) { }
+            } catch (e) {}
         });
         refresh();
     }
 
+    async function toggleAudioLoop() {
+        if (isAudioLooping) { 
+            stopAudioLoop(); 
+        } else {
+            if (list.length === 0) return alert("請先生成單字清單！");
+            isAudioLooping = true;
+            document.getElementById('audioModeBtn').innerText = "播放中...";
+            document.getElementById('stopBtn').style.display = "flex";
+            playSequence();
+        }
+    }
+
+    function stopAudioLoop() {
+        isAudioLooping = false;
+        window.speechSynthesis.cancel();
+        document.getElementById('audioModeBtn').innerText = "🎧 啟動循環聽拼";
+        document.getElementById('stopBtn').style.display = "none";
+        document.querySelectorAll('.word-card').forEach(c => c.classList.remove('highlight-playing'));
+        document.querySelectorAll('.spell-display').forEach(s => s.innerText = '');
+    }
+
+    async function playSequence() {
+        for (let i = 0; i < list.length; i++) {
+            if (!isAudioLooping) break;
+            const item = list[i];
+            const card = document.getElementById('c' + item.id);
+            const spellBox = document.getElementById('spell-' + item.id);
+            
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('highlight-playing');
+
+            // 1. 兩次發音 (稍快間隔)
+            await speakPromise(item.w, 'en-US');
+            await sleep(400); 
+            await speakPromise(item.w, 'en-US');
+            await sleep(600);
+            
+            // 2. 快速拼音 (縮短一半時間)
+            let chars = item.w.split('');
+            for (let char of chars) {
+                if (!isAudioLooping) break;
+                spellBox.innerText += char.toUpperCase() + ' ';
+                await speakPromise(char, 'en-US', 1.0); // 正常語速
+                await sleep(150); // 字母間隔縮短
+            }
+            await sleep(300);
+            await speakPromise(item.w, 'en-US'); 
+            await sleep(600);
+
+            // 3. 中文發音
+            let fullPos = posMap[item.pos] || item.pos;
+            await speakPromise(`詞性${fullPos}, ${item.tr}`, 'zh-TW');
+            
+            await sleep(1200); // 換字間隔縮短
+            card.classList.remove('highlight-playing');
+            spellBox.innerText = '';
+        }
+        if (isAudioLooping) stopAudioLoop();
+    }
+
+    function speakPromise(text, lang, rate = 1.0) {
+        return new Promise((resolve) => {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang;
+            u.rate = rate;
+            u.onend = resolve;
+            window.speechSynthesis.speak(u);
+        });
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
     function say(t) {
         window.speechSynthesis.cancel();
-        let u = new SpeechSynthesisUtterance(t);
+        const u = new SpeechSynthesisUtterance(t);
         u.lang = 'en-US';
         window.speechSynthesis.speak(u);
     }
@@ -110,17 +214,7 @@
 
     function refresh() {
         let left = list.filter(x => x.s !== 'know').length;
-        document.getElementById('count').innerText = '剩餘：' + left + ' 字';
-        let need = list.some(x => x.s === 'not' || x.s === 'forget');
-        document.getElementById('nextBtn').style.display = need ? 'block' : 'none';
-    }
-
-    function nextRound() {
-        let n = list.filter(x => x.s === 'not' || x.s === 'forget')
-                    .map(x => `${x.w} ${x.pos} ${x.kk} ${x.tr}`).join('\n');
-        document.getElementById('rawInput').value = n;
-        run();
-        window.scrollTo(0, 0);
+        document.getElementById('count').innerText = '剩餘：' + left;
     }
 </script>
 </body>
