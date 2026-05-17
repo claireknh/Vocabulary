@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TOEIC 聽拼全功能版</title>
+    <title>TOEIC 單字練習聽拼版</title>
     <style>
         :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --purple: #6f42c1; --orange: #fd7e14; }
         body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; padding-bottom: 120px; }
@@ -12,15 +12,15 @@
         textarea { width: 100%; height: 80px; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; }
         .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; touch-action: manipulation; }
-        .btn-main { background: var(--primary); color: white; padding: 15px; font-size: 16px; }
-        .btn-audio { background: var(--purple); color: white; padding: 15px; font-size: 16px; }
+        .btn-main { background: rgb(140, 205, 235); color: white; padding: 15px; font-size: 16px; }
+        .btn-audio { background: rgb(114, 92, 173); color: white; padding: 15px; font-size: 16px; }
         
         /* 浮動按鈕群組 */
         .float-group { position: fixed; right: 20px; bottom: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; }
         
         .float-btn { width: 65px; height: 65px; border-radius: 50%; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid white; cursor: pointer; }
-        #reviewBtn { background: var(--orange); }
-        #stopBtn { background: var(--danger); font-size: 24px; }
+        #reviewBtn { background:  rgb(250, 103, 129); }
+        #stopBtn { background: rgb(114, 92, 173); font-size: 24px; }
 
         .word-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; position: relative; transition: 0.3s; border-left: 6px solid transparent; }
         .word-main { font-size: 22px; font-weight: bold; }
@@ -31,14 +31,14 @@
         
         .action-btns { display: flex; gap: 8px; margin-top: 10px; }
         .action-btns button { flex: 1; padding: 12px; color: white; font-size: 14px; }
-        .b-k { background: var(--success); } 
-        .b-n { background: var(--warning); color: #000; } 
-        .b-f { background: var(--danger); }
+        .b-k { background: rgb(10, 124, 110); } 
+        .b-n { background: rgb(245, 158, 11); color: #000; } 
+        .b-f { background: rgb(250, 103, 129); }
         
         /* 狀態樣式修正 */
         .st-know { opacity: 0.2; filter: grayscale(1); border-left-color: transparent !important; }
-        .st-not { border-left-color: var(--warning) !important; background: #fffdf5; }
-        .st-forget { border-left-color: var(--danger) !important; background: #fff5f5; }
+        .st-not { border-left-color: rgb(245, 158, 11) !important; background: #fffdf5; }
+        .st-forget { border-left-color: rgb(250, 103, 129) !important; background: #fff5f5; }
         
         .highlight-playing { border: 3px solid var(--purple) !important; background: #fdfaff !important; border-radius: 10px; }
         #count { text-align: right; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
@@ -58,9 +58,9 @@
 </div>
 
 <div class="float-group">
-    <div id="stopBtn" class="float-btn" onclick="stopAudioLoop()">⏹</div>
+    <div id="stopBtn" class="float-btn" onclick="stopAudioLoop()">■</div>
     <div id="reviewBtn" class="float-btn" onclick="nextRound()">
-        <span style="font-size: 20px;">🔄</span><span>再次複習</span>
+        <span style="font-size: 20px;">⟳</span><span>複習</span>
     </div>
 </div>
 
@@ -110,13 +110,13 @@
                             <div id="spell-${i}" class="spell-display"></div>
                         </div>
                         <div style="text-align:right;">
-                            <div style="font-size:12px; color:#888;">${pos}</div>
+                            <div style="font-size:18px; font-weight:bold; color:#FF8888;">${pos}</div>
                             <div style="font-size:18px; font-weight:bold;">${tr}</div>
                         </div>
                     </div>
                     <div class="action-btns">
                         <button class="b-k" onclick="upd(${i},'know')">熟悉</button>
-                        <button class="b-n" onclick="upd(${i},'not')">中等</button>
+                        <button class="b-n" onclick="upd(${i},'not')">再多背一下</button>
                         <button class="b-f" onclick="upd(${i},'forget')">陌生</button>
                     </div>
                 `;
@@ -130,7 +130,7 @@
         if (isAudioLooping) { 
             stopAudioLoop(); 
         } else {
-            if (list.length === 0) return alert("請先生成單字清單！");
+            if (list.length === 0) return alert("生成單字清單！");
             isAudioLooping = true;
             document.getElementById('audioModeBtn').innerText = "播放中...";
             document.getElementById('stopBtn').style.display = "flex";
@@ -158,25 +158,25 @@
             card.classList.add('highlight-playing');
 
             await speakPromise(item.w, 'en-US');
-            await sleep(400); 
+            await sleep(300); 
             await speakPromise(item.w, 'en-US');
-            await sleep(600);
+            await sleep(300);
             
             let chars = item.w.split('');
             for (let char of chars) {
                 if (!isAudioLooping) break;
                 spellBox.innerText += char.toUpperCase() + ' ';
                 await speakPromise(char, 'en-US', 1.0);
-                await sleep(150); 
+                await sleep(5); 
             }
-            await sleep(300);
+            await sleep(100);
             await speakPromise(item.w, 'en-US'); 
-            await sleep(600);
+            await sleep(100);
 
             let fullPos = posMap[item.pos] || item.pos;
-            await speakPromise(`詞性${fullPos}, ${item.tr}`, 'zh-TW');
+            await speakPromise(`${fullPos}, ${item.tr}`, 'zh-TW');
             
-            await sleep(1200);
+            await sleep(400);
             card.classList.remove('highlight-playing');
             spellBox.innerText = '';
         }
