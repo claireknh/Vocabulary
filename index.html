@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TOEIC 單字練習聽拼版</title>
+    <title>單字練習聽拼循環</title>
     <style>
         :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --purple: #6f42c1; --orange: #fd7e14; }
         body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; padding-bottom: 120px; }
@@ -47,7 +47,7 @@
 <body>
 
 <div class="container">
-    <h2>🎯 TOEIC 單字練習聽拼版</h2>
+    <h2>🎯單字練習聽拼循環</h2>
     <textarea id="rawInput" placeholder="在此貼上單字資料..."></textarea>
     <div class="btns">
         <button class="btn-main" onclick="run(true)">隨機複習</button>
@@ -147,41 +147,55 @@
         document.querySelectorAll('.spell-display').forEach(s => s.innerText = '');
     }
 
-    async function playSequence() {
-        for (let i = 0; i < list.length; i++) {
-            if (!isAudioLooping) break;
-            const item = list[i];
-            const card = document.getElementById('c' + item.id);
-            const spellBox = document.getElementById('spell-' + item.id);
-            
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            card.classList.add('highlight-playing');
+   
+async function playSequence() {
+        // 使用 while 達成無限循環
+        while (isAudioLooping) {
+            for (let i = 0; i < list.length; i++) {
+                if (!isAudioLooping) break; // 隨時檢查是否按下停止
+                
+                const item = list[i];
+                const card = document.getElementById('c' + item.id);
+                const spellBox = document.getElementById('spell-' + item.id);
+                
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('highlight-playing');
 
-            await speakPromise(item.w, 'en-US');
-            await sleep(300); 
-            await speakPromise(item.w, 'en-US');
-            await sleep(300);
-            
-            let chars = item.w.split('');
-            for (let char of chars) {
-                if (!isAudioLooping) break;
-                spellBox.innerText += char.toUpperCase() + ' ';
-                await speakPromise(char, 'en-US', 1.0);
-                await sleep(5); 
+                // 1. 兩次發音
+                await speakPromise(item.w, 'en-US');
+                await sleep(100); 
+                await speakPromise(item.w, 'en-US');
+                await sleep(100);
+                
+                // 2. 快速拼音
+                let chars = item.w.split('');
+                for (let char of chars) {
+                    if (!isAudioLooping) break;
+                    spellBox.innerText += char.toUpperCase() + ' ';
+                    await speakPromise(char, 'en-US', 1.0);
+                    await sleep(5); 
+                }
+                await sleep(100);
+                await speakPromise(item.w, 'en-US'); 
+                await sleep(100);
+
+                // 3. 中文發音
+                let fullPos = posMap[item.pos] || item.pos;
+                await speakPromise(`${fullPos}, ${item.tr}`, 'zh-TW');
+                
+                await sleep(100);
+                card.classList.remove('highlight-playing');
+                spellBox.innerText = '';
             }
-            await sleep(100);
-            await speakPromise(item.w, 'en-US'); 
-            await sleep(100);
-
-            let fullPos = posMap[item.pos] || item.pos;
-            await speakPromise(`${fullPos}, ${item.tr}`, 'zh-TW');
-            
-            await sleep(400);
-            card.classList.remove('highlight-playing');
-            spellBox.innerText = '';
+            // 當 for 迴圈跑完 (最後一個字唸完)，如果沒按停止，會自動進入下一個 while 循環
+            if (isAudioLooping) {
+                console.log("一輪結束，重新開始...");
+                await sleep(100); // 在兩輪大循環之間稍微停頓 2 秒
+            }
         }
-        if (isAudioLooping) stopAudioLoop();
     }
+
+
 
     function speakPromise(text, lang, rate = 1.0) {
         return new Promise((resolve) => {
